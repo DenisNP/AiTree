@@ -145,7 +145,7 @@ public class AiService
             [
                 //new MessageContent("system", SystemPrompt),
                 //new MessageContent("user", userText)
-                new MessageContent("user", SystemPrompt + "\n\nСцена: " +  userText), // так лучше работает
+                new MessageContent("user", SystemPrompt + "\n\nИтак, сцена: " +  userText), // так лучше работает
             ],
             [_setPaletteDefinition],
             model: "GigaChat-2-Pro",
