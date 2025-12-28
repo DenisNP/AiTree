@@ -1,6 +1,7 @@
 ﻿using AiTreeServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
+using AiTreeServer.Common;
 
 namespace AiTreeServer.Controllers;
 
@@ -11,13 +12,19 @@ public class PaletteController(BusService bus)
     [HttpGet]
     public string GetCurrentPalette()
     {
-        return bus.CurrentResponse;
+        return bus.GetCurrentResponse();
     }
 
     [HttpGet("test")]
     public void Test([FromQuery] string q)
     {
         bus.Requests.Enqueue(q);
+    }
+
+    [HttpGet("delete")]
+    public void Delete()
+    {
+        bus.DeleteCurrentPalette();
     }
 
     [HttpGet("view")]
@@ -39,11 +46,12 @@ public class PaletteController(BusService bus)
         // Генерируем контент с палитрой
         var content = new StringBuilder();
         
-        if (bus.LastParameters is { Colors.Length: > 0 })
+        SetPaletteParameters? currentParameters = bus.PeekParameters();
+        if (currentParameters is { Colors.Length: > 0 })
         {
             content.AppendLine("        <div class=\"palette\">");
             
-            foreach (string color in bus.LastParameters.Colors)
+            foreach (string color in currentParameters.Colors)
             {
                 content.AppendLine("            <div class=\"color-box\">");
                 content.AppendLine($"                <div class=\"color-rect\" style=\"background-color: {color};\"></div>");
@@ -52,7 +60,7 @@ public class PaletteController(BusService bus)
             }
             
             content.AppendLine("        </div>");
-            content.AppendLine($"        <div class=\"info\">Всего цветов: {bus.LastParameters.Colors.Length} | Скорость: {bus.LastParameters.Speed} | Масштаб: {bus.LastParameters.Scale}</div>");
+            content.AppendLine($"        <div class=\"info\">Всего цветов: {currentParameters.Colors.Length} | Скорость: {currentParameters.Speed} | Масштаб: {currentParameters.Scale}</div>");
         }
         else
         {

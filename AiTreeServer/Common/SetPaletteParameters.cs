@@ -1,3 +1,74 @@
 ﻿namespace AiTreeServer.Common;
 
-public record SetPaletteParameters(string[] Colors, int Speed, int Scale);
+public record SetPaletteParameters(string[] Colors, int Speed, int Scale)
+{
+    private string? _stringInterpretation;
+    
+    /// <summary>
+    /// Вычисляет одноцифренный хэш от параметров палитры
+    /// </summary>
+    private int CalculateHash()
+    {
+        int hash = Colors.Length + Speed + Scale + Colors.Sum(color => color.GetHashCode() % 100);
+        return Math.Abs(hash) % 10;
+    }
+
+    /// <summary>
+    /// Конвертирует HEX цвет в RGB каналы
+    /// </summary>
+    private static int[]? HexToChannels(string hex)
+    {
+        // Удаляем символ # если есть
+        hex = hex.TrimStart('#');
+    
+        // Проверяем корректность длины
+        if (hex.Length != 6)
+        {
+            return null;
+        }
+
+        try
+        {
+            // Преобразуем каждые два символа в число
+            var r = Convert.ToInt32(hex[..2], 16);
+            var g = Convert.ToInt32(hex[2..4], 16);
+            var b = Convert.ToInt32(hex[4..6], 16);
+
+            return [r, g, b];
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    /// <summary>
+    /// Генерирует строку в формате: hash,numColors,r1,g1,b1,...,speed,scale
+    /// Кэширует результат после первого вычисления
+    /// </summary>
+    public string ToStringInterpretation()
+    {
+        if (_stringInterpretation != null)
+        {
+            return _stringInterpretation;
+        }
+        
+        int hash = CalculateHash();
+        
+        // Конвертируем все hex-цвета в значения по каналам
+        var channels = new List<int>();
+        foreach (string hexColor in Colors)
+        {
+            int[]? currentChannels = HexToChannels(hexColor);
+            if (currentChannels is { Length: 3 })
+            {
+                channels.AddRange(currentChannels);
+            }
+        }
+        
+        int numColors = channels.Count / 3;
+        
+        _stringInterpretation = $"{hash},{numColors},{string.Join(",", channels)},{Speed},{Scale}";
+        return _stringInterpretation;
+    }
+}

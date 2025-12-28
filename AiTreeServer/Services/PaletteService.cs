@@ -4,15 +4,34 @@ namespace AiTreeServer.Services;
 
 public class PaletteService(AiService aiService, BusService bus, ILogger<PaletteService> logger) : BackgroundService
 {
-    private int _lastResponseCode = 0;
-
+    private readonly Random _random = new();
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Palette service started");
 
+        // Запускаем таймер для случайных палитр
+        _ = Task.Run(async () => await RandomPaletteLoop(stoppingToken), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             await ParseNextRequest();
+        }
+    }
+    
+    private async Task RandomPaletteLoop(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // Ждём случайное время от 1 до 2 минут
+            int delaySeconds = _random.Next(60, 121);
+            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
+            
+            if (!stoppingToken.IsCancellationRequested && bus.GetHistoryCount() > 0)
+            {
+                bus.SetRandom();
+                logger.LogInformation("Random palette set from history ({Count} total)", bus.GetHistoryCount());
+            }
         }
     }
 
@@ -29,8 +48,6 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
                     "Response got: {Colors}, {Speed}, {Scale}",
                     string.Join(",", response.Colors), response.Speed, response.Scale
                 );
-                
-                bus.LastParameters = response;
 
                 // если цвет один, делаем палитру из двух одинаковых, т.к. реализация чтения палитры ожидает от двух
                 if (response.Colors.Length == 1)
@@ -38,57 +55,19 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
                     response = response with { Colors = [response.Colors[0], response.Colors[0]] };
                 }
 
-                // сконвертируем все hex-цвета в значения по каналам
-                var channels = new List<int>();
-                foreach (string hexColor in response.Colors)
+                // если получили достаточное число цветов, добавляем в историю
+                if (response.Colors.Length >= 2)
                 {
-                    int[]? currentChannels = HexToChannels(hexColor);
-                    if (currentChannels is { Length: 3 })
-                    {
-                        channels.AddRange(currentChannels);
-                    }
-                }
-
-                // если получили правильное и достаточное число цветов, перезапишем текущий ответ
-                if (channels.Count >= 6 && channels.Count % 3 == 0)
-                {
-                    int numColors = channels.Count / 3;
-                    _lastResponseCode = 1 - _lastResponseCode;
-                    bus.CurrentResponse = $"{_lastResponseCode},{numColors},{string.Join(",", channels)},{response.Speed},{response.Scale}";
+                    bus.AddPalette(response);
                     
-                    logger.LogInformation("Current response: {CurrentResponse}", bus.CurrentResponse);
+                    logger.LogInformation("Palette added to history, total: {Count}", bus.GetHistoryCount());
+                    logger.LogInformation("Current response: {CurrentResponse}", bus.GetCurrentResponse());
                 }
                 else
                 {
-                    logger.LogInformation("Response wasn't modified");
+                    logger.LogInformation("Response wasn't modified: insufficient colors");
                 }
             }
-        }
-    }
-
-    private int[]? HexToChannels(string hex)
-    {
-        // Удаляем символ # если есть
-        hex = hex.TrimStart('#');
-    
-        // Проверяем корректность длины
-        if (hex.Length != 6)
-        {
-            return null;
-        }
-
-        try
-        {
-            // Преобразуем каждые два символа в число
-            var r = Convert.ToInt32(hex[..2], 16);
-            var g = Convert.ToInt32(hex[2..4], 16);
-            var b = Convert.ToInt32(hex[4..6], 16);
-
-            return [r, g, b];
-        }
-        catch
-        {
-            return null;
         }
     }
 }

@@ -108,6 +108,16 @@ public class AiService
                     {"animation_speed", 10},
                     {"palette_scale", 1}        
                 }
+            },
+            new FewShotExample
+            {
+                Request = "хвойный лес солнечным зимним днём",
+                Params = new Dictionary<string, object>
+                {
+                    {"colors", new[]{ "#FFFFFF", "#006400", "#FFFFFF", "#FFD700", "#c8edf9" }},
+                    {"animation_speed", 1},
+                    {"palette_scale", 6}        
+                }
             }
         ],
         ReturnParameters = new ReturnParameters()
