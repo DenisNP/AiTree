@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using AiTreeServer.GigaChatSDK.Interfaces;
 using AiTreeServer.GigaChatSDK.Models;
@@ -35,6 +36,7 @@ public class GigaChat(ITokenService tokenService, IHttpService httpService) : IG
         catch (HttpRequestException)
         {
             await _tokenService.CreateTokenAsync();
+            request.Headers.Authorization = new AuthenticationHeaderValue($"Bearer {_tokenService.Token!.AccessToken}");
             responseBody = await _httpService.SendAsync(request);
         }
 
