@@ -35,11 +35,6 @@ public class AiService
                                         же вес в конечной палитре, как ключевому.
                                         
                                         Используй только HEX-коды длиной 6, то есть не #FFF, а #FFFFFF.
-                                        
-                                        Если не знаешь, что предложить, не нужно выдавать стандартный набор цветов
-                                        по-умолчанию. В худшем случае выдай случайный набор. Но вообще представь картинку,
-                                        которую можно было бы скачать из интернета по указанному запросу, и предложи
-                                        цвета для этой картинки.
                                         """;
     
     private readonly FunctionDescription _setPaletteDefinition = new()
@@ -140,11 +135,13 @@ public class AiService
     {
         var query = new MessageQuery(
             [
-                new MessageContent("system", SystemPrompt),
-                new MessageContent("user", userText)
+                //new MessageContent("system", SystemPrompt),
+                //new MessageContent("user", userText)
+                new MessageContent("user", SystemPrompt + "\n\nСцена: " +  userText), // так лучше работает
             ],
             [_setPaletteDefinition],
-            model: "GigaChat-2-Max",
+            model: "GigaChat-2-Pro",
+            temperature: 1.5f,
             functionCall: new Dictionary<string, string> { { "name", _setPaletteDefinition.Name! } }
         );
 
