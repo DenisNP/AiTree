@@ -32,7 +32,7 @@ public class MessageQuery
     /// </summary>
 
     [JsonPropertyName("temperature")]
-    public float Temperature { get; set; }
+    public float? Temperature { get; set; }
     /// <summary>
     /// Параметр используется как альтернатива temperature. 
     /// Задает вероятностную массу токенов, которые должна учитывать модель. 
@@ -40,7 +40,7 @@ public class MessageQuery
     /// По умолчанию: 0.47
     /// </summary>
     [JsonPropertyName("top_p")]
-    public float TopP { get; set; }
+    public float? TopP { get; set; }
     /// <summary>
     /// Количество вариантов ответов, которые нужно сгенерировать для каждого входного сообщения
     /// По умолчанию: 1
@@ -59,13 +59,14 @@ public class MessageQuery
     /// </summary>
     [JsonPropertyName("max_tokens")]
     public long MaxTokens { get; set; }
+
     public MessageQuery(
         List<MessageContent>? messages = null,
         List<FunctionDescription>? functions = null,
         object? functionCall = null,
         string model = "GigaChat:latest",  
-        float temperature = 0.87f, 
-        float topP = 0.47f, 
+        float? temperature = null, 
+        float? topP = null, 
         long n = 1, 
         bool stream = false, 
         long maxTokens = 512)
