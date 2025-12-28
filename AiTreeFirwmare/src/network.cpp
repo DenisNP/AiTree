@@ -3,6 +3,17 @@
 #include <network.h>
 #include <palette.h>
 #include <animations.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+
+// Структура для передачи данных через очередь
+struct PayloadData {
+    char payload[MAX_PAYLOAD_LENGTH];
+};
+
+// Очередь для передачи данных
+static QueueHandle_t dataQueue = NULL;
 
 // Внутренние функции (не экспортируются наружу)
 
@@ -171,14 +182,14 @@ extern void startNetwork()
     connectToWiFi();
 }
 
-// Получение данных с сервера
-extern bool fetchData()
+// Получение данных с сервера (внутренняя функция)
+// Возвращает payload если данные изменились, иначе пустую строку
+static String fetchData()
 {
     // Проверяем подключение к WiFi
     if (WiFi.status() != WL_CONNECTED)
     {
-        Serial.println("WiFi не подключен, fetchData отменен");
-        return false;
+        return "";
     }
 
     HTTPClient http;
@@ -189,11 +200,7 @@ extern bool fetchData()
     if (httpCode == HTTP_CODE_OK)
     {
         String payload = http.getString();
-        if (Serial)
-        {
-            Serial.println("Получены данные: ");
-            Serial.println(payload);
-        }
+        payload.trim();
 
         // Парсим первое число (код)
         int commaIndex = payload.indexOf(',');
@@ -214,45 +221,128 @@ extern bool fetchData()
         {                       
             lastDataCode = currentCode;
             lastDataString = payload;
-            
-            // Парсим остальные данные - количество цветов и палитру
-            int pos = commaIndex + 1;
-            int nextComma = payload.indexOf(',', pos);
-            
-            if (nextComma > 0)
-            {
-                // Получаем количество цветов
-                uint8_t numColors = payload.substring(pos, nextComma).toInt();
 
-                if (numColors > 0 && numColors <= 16)
-                {
-                    // Парсим цвета
-                    pos = parseColors(payload, nextComma + 1, numColors);
-                    
-                    // Парсим параметры speed и scale
-                    parseParameters(payload, pos);
-                }
+            if (Serial)
+            {
+                Serial.println("Получены новые данные: ");
+                Serial.println(payload);
             }
 
             http.end();
-            return true;  // Данные изменились
+            return payload;  // Данные изменились - возвращаем payload
         }
         else
         {
             http.end();
-            return false;  // Данные те же
+            return "";  // Данные те же
         }
     }
     else
     {
-        if (Serial)
-        {
-            Serial.print("Ошибка HTTP запроса: ");
-            Serial.println(httpCode);
-        }
-
         http.end();
-        return false;
+        return "";
     }
 }
 
+// Парсинг payload и применение настроек (вызывается в основном потоке)
+static void parsePayload(const String& payload)
+{
+    // Парсим первое число (код) - уже проверено в fetchData
+    int commaIndex = payload.indexOf(',');
+    
+    if (commaIndex <= 0)
+    {
+        return;
+    }
+    
+    // Парсим остальные данные - количество цветов и палитру
+    int pos = commaIndex + 1;
+    int nextComma = payload.indexOf(',', pos);
+    
+    if (nextComma > 0)
+    {
+        // Получаем количество цветов
+        uint8_t numColors = payload.substring(pos, nextComma).toInt();
+
+        if (numColors > 0 && numColors <= 16)
+        {
+            // Парсим цвета
+            pos = parseColors(payload, nextComma + 1, numColors);
+            
+            // Парсим параметры speed и scale
+            parseParameters(payload, pos);
+        }
+    }
+}
+
+// Задача FreeRTOS для периодического получения данных
+static void networkTask(void* parameter)
+{
+    TickType_t lastFetchTime = xTaskGetTickCount();
+    
+    while (true)
+    {
+        // Ждем интервал перед следующим запросом
+        vTaskDelayUntil(&lastFetchTime, pdMS_TO_TICKS(FETCH_INTERVAL));
+        
+        // Пытаемся получить данные
+        String payload = fetchData();
+        
+        if (payload.length() > 0 && payload.length() < MAX_PAYLOAD_LENGTH)
+        {
+            // Данные изменились - отправляем payload в очередь
+            PayloadData data;
+            payload.toCharArray(data.payload, MAX_PAYLOAD_LENGTH);
+            xQueueSend(dataQueue, &data, 0);
+        }
+    }
+}
+
+// Запуск задачи для периодического получения данных
+extern void startNetworkTask()
+{
+    // Создаем очередь на 1 элемент с данными PayloadData
+    dataQueue = xQueueCreate(1, sizeof(PayloadData));
+
+    if (dataQueue == NULL)
+    {
+        if (Serial)
+        {
+            Serial.println("Ошибка создания очереди!");
+        }
+        return;
+    }
+    
+    // Создаем задачу на ядре 0 (чтобы не мешать основному циклу на ядре 1)
+    xTaskCreatePinnedToCore(
+        networkTask,           // Функция задачи
+        "NetworkTask",         // Имя задачи
+        8192,                  // Размер стека (увеличен для HTTP)
+        NULL,                  // Параметр задачи
+        1,                     // Приоритет задачи
+        NULL,                  // Хэндл задачи
+        0                      // Ядро (0 или 1)
+    );
+    
+    if (Serial)
+    {
+        Serial.println("Сетевая задача запущена");
+    }
+}
+
+// Проверка очереди на наличие новых данных
+extern bool checkNetworkData()
+{
+    PayloadData data;
+    
+    // Неблокирующая проверка очереди
+    if (xQueueReceive(dataQueue, &data, 0) == pdTRUE)
+    {
+        // Получили новые данные - парсим их в основном потоке
+        String payload = String(data.payload);
+        parsePayload(payload);
+        return true;
+    }
+    
+    return false;
+}

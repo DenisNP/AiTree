@@ -17,12 +17,19 @@
 #define BRIGHTNESS          200
 
 // Настройки WiFi
-#define WIFI_SSID           "YourNetworkName"
-#define WIFI_PASSWORD       "YourPassword"
+#define WIFI_SSID           "471"
+#define WIFI_PASSWORD       "89052791441"
 #define WIFI_TIMEOUT        10000  // Таймаут подключения в миллисекундах
 
 // URL для получения данных
-#define DATA_URL            "http://192.168.1.100/data"
+#define DATA_URL            "http://aitree.ispretty.fun:8080/palette"
+
+// Интервал опроса сервера (в миллисекундах)
+#define FETCH_INTERVAL      200
+
+// Максимальная длина payload:
+// код(1) + кол-во цветов(2) + цвета(16*3*3=144) + запятые(~50) + speed(2) + scale(2) + запас
+#define MAX_PAYLOAD_LENGTH  256
 
 // Коэффициент затухания для переходов
 #define FADE_RATIO          0.97f

@@ -27,7 +27,17 @@ public class GigaChat(ITokenService tokenService, IHttpService httpService) : IG
             Content = new StringContent(JsonSerializer.Serialize(query), Encoding.UTF8, "application/json")
         };
 
-        string responseBody = await _httpService.SendAsync(request);
+        string responseBody;
+        try
+        {
+            responseBody = await _httpService.SendAsync(request);
+        }
+        catch (HttpRequestException)
+        {
+            await _tokenService.CreateTokenAsync();
+            responseBody = await _httpService.SendAsync(request);
+        }
+
         return JsonSerializer.Deserialize<Response>(responseBody);
     }
 

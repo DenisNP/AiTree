@@ -24,7 +24,7 @@ void animate()
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     delay(1000);
     FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -35,9 +35,11 @@ void setup()
     random16_set_seed(5867);
     random16_add_entropy(analogRead(3));
 
-    // запускаем сеть и получаем данные
+    // запускаем сеть
     startNetwork();
-    fetchData();
+    
+    // Запускаем задачу для периодического получения данных
+    startNetworkTask();
 
     // Запускаем первый паттерн
     startTransition();
@@ -48,8 +50,8 @@ void loop()
     // Замеряем время в начале итерации
     unsigned long frameStartTime = millis();
     
-    // получаем данные из сети
-    if (fetchData())
+    // Проверяем очередь на наличие новых данных из сети
+    if (checkNetworkData())
     {
         startTransition();
     }

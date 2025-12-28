@@ -15,10 +15,16 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await ParseNextRequest();
+            try
+            {
+                await ParseNextRequest();
+            } catch (Exception ex)
+            {
+                logger.LogError(ex, "Error occurred processing request");
+            }
         }
     }
-    
+
     private async Task RandomPaletteLoop(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -30,7 +36,7 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
             if (!stoppingToken.IsCancellationRequested && bus.GetHistoryCount() > 0)
             {
                 bus.SetRandom();
-                logger.LogInformation("Random palette set from history ({Count} total)", bus.GetHistoryCount());
+                // logger.LogInformation("Random palette set from history ({Count} total)", bus.GetHistoryCount());
             }
         }
     }
