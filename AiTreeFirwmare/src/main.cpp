@@ -22,12 +22,6 @@ void animate()
     }
 }
 
-// Основная функция запуска следующего паттерна
-void startNextPattern()
-{
-
-}
-
 void setup()
 {
     Serial.begin(9600);
@@ -46,18 +40,33 @@ void setup()
     fetchData();
 
     // Запускаем первый паттерн
-    startNextPattern();
+    startTransition();
 }
 
 void loop()
 {
+    // Замеряем время в начале итерации
+    unsigned long frameStartTime = millis();
+    
     // получаем данные из сети
-    fetchData();
+    if (fetchData())
+    {
+        startTransition();
+    }
 
     // Отрисовываем кадр с учетом перехода
     animate();
 
     // Отображаем на ленте
     FastLED.show();
-    FastLED.delay(1000 / FRAMES_PER_SECOND);
+    
+    // Вычисляем сколько времени ушло на обработку
+    unsigned long frameTime = millis() - frameStartTime;
+    unsigned long targetFrameTime = 1000 / FRAMES_PER_SECOND;
+    
+    // Делаем паузу только на оставшееся время
+    if (frameTime < targetFrameTime)
+    {
+        FastLED.delay(targetFrameTime - frameTime);
+    }
 }

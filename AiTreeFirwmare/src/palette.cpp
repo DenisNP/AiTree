@@ -1,7 +1,8 @@
 #include <palette.h>
 #include <FastLED.h>
 
-CRGBPalette16 currentPalette;
+// Инициализируем палитру радугой
+CRGBPalette16 currentPalette = RainbowColors_p;
 
 extern CRGBPalette16 getCurrentPalette() {
     return currentPalette;

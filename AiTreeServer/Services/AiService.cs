@@ -1,4 +1,7 @@
-﻿using AiTreeServer.GigaChatSDK;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using AiTreeServer.Common;
+using AiTreeServer.GigaChatSDK;
 using AiTreeServer.GigaChatSDK.Interfaces;
 using AiTreeServer.GigaChatSDK.Models;
 
@@ -31,6 +34,8 @@ public class AiService
                                         цветов, тщательно продумай, какие цвета ты туда включишь. Иногда лучше 
                                         увеличить или продублировать цвета, чтобы не дать второстепенному цвету такой 
                                         же вес в конечной палитре, как ключевому.
+                                        
+                                        Используй только HEX-коды длиной 6, то есть не #FFF, а #FFFFFF.
                                         """;
     
     private readonly FunctionDescription _setPaletteDefinition = new()
@@ -73,14 +78,35 @@ public class AiService
             },
             Required = ["colors"]
         },
-        FewShotExamples = [new FewShotExample
+        FewShotExamples = [
+            new FewShotExample
             {
-                Request = "Океан во время шторма",
+                Request = "океан во время шторма",
                 Params = new Dictionary<string, object>
                 {
                     {"colors", new[]{ "#243961", "#eaeef1", "#4e76c1", "#3661b0" }},
                     {"animation_speed", 7},
                     {"palette_scale", 5}
+                }
+            },
+            new FewShotExample
+            {
+                Request = "цветущий сад сакуры летним днём",
+                Params = new Dictionary<string, object>
+                {
+                    {"colors", new[]{ "#FFC0CB", "#FFE4E1", "#FFFFFF", "#90EE90", "#FFD700" }},
+                    {"animation_speed", 3},
+                    {"palette_scale", 7}        
+                }
+            },
+            new FewShotExample
+            {
+                Request = "коробка с конфетти",
+                Params = new Dictionary<string, object>
+                {
+                    {"colors", new[]{ "#FFD700","#FF69B4","#00FFFF","#FF00FF","#FF4500" }},
+                    {"animation_speed", 10},
+                    {"palette_scale", 1}        
                 }
             }
         ],
@@ -96,7 +122,7 @@ public class AiService
         _gigaChat = new GigaChat(tokenService, httpService);
     }
 
-    public async Task<Response?> AskChat(string userText)
+    public async Task<SetPaletteParameters?> AskChatForPalette(string userText)
     {
         var query = new MessageQuery(
             [
@@ -107,7 +133,45 @@ public class AiService
             model: "GigaChat-2-Max",
             functionCall: new Dictionary<string, string> { { "name", _setPaletteDefinition.Name! } }
         );
+
+        Response? response = await _gigaChat.CompletionsAsync(query);
+        if (response?.Choices == null || response.Choices.Count < 1)
+        {
+            return null;
+        }
+
+        Choice choice = response.Choices[0];
+        if (choice.Message?.FunctionCall?.Name != _setPaletteDefinition.Name)
+        {
+            return null;
+        }
+
+        FunctionCall functionCall = choice.Message!.FunctionCall!;
+        if (!functionCall.Arguments.TryGetValue("colors", out object? colorsArgument) || colorsArgument is not JsonElement colorsEl)
+        {
+            return null;
+        }
+
+        string[] colors = colorsEl.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToArray();
+
+        if (colors is not { Length: > 0 })
+        {
+            return null;
+        }
         
-        return await _gigaChat.CompletionsAsync(query);
+        var speed = 5;
+        var scale = 5;
+
+        if (functionCall.Arguments.TryGetValue("animation_speed", out object? speedArgument))
+        {
+            int.TryParse(speedArgument?.ToString(), out speed);
+        }
+
+        if (functionCall.Arguments.TryGetValue("palette_scale", out object? scaleArgument))
+        {
+            int.TryParse(scaleArgument?.ToString(), out scale);
+        }
+
+        return new SetPaletteParameters(colors.Take(16).ToArray(), speed, scale);
     }
 }
