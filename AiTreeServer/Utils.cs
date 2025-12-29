@@ -51,8 +51,8 @@ public static class Utils
 
     public static string AdjustColorIfHighSaturation(string hex)
     {
-        const double saturationThreshold = 0.5; // 50% в формате 0-1
-        const double lightnessReduction = 0.15; // 15% снижения
+        const double saturationThreshold = 0.5;
+        const double lightnessReduction = 0.2;
 
         Color color = HexToColor(hex);
         (double h, double s, double l) = RgbToHsl(color);
