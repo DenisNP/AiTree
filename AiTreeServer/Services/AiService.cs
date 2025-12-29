@@ -139,7 +139,7 @@ public class AiService(DeepSeekClient deepSeek)
         }
         else
         {
-            arguments = arguments with { Speed = Math.Clamp(arguments.Speed + 2, 1, 10) };
+            arguments = arguments with { Speed = Math.Clamp(arguments.Speed + 2, 1, 10) }; // сетка занижает скорость, увеличим искусственно
         }
 
         if (arguments.Scale == 0)
@@ -148,7 +148,7 @@ public class AiService(DeepSeekClient deepSeek)
         }
         else
         {
-            arguments = arguments with { Scale = Math.Clamp(arguments.Scale - 2, 1, 10) };
+            arguments = arguments with { Scale = Math.Clamp(arguments.Scale - 2, 1, 10) }; // сетка завышает масштаб, уменьшим искусственно
         }
 
         return arguments;
