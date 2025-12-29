@@ -5,11 +5,6 @@ namespace AiTreeServer.Services;
 
 public class BusService
 {
-    /// <summary>
-    /// Радужная палитра по умолчанию (7 цветов радуги)
-    /// </summary>
-    private const string DefaultRainbowResponse = "0,7,255,0,0,255,127,0,255,255,0,0,255,0,0,255,255,0,0,255,127,0,255,5,5";
-
     private readonly Lock _lock = new();
     private readonly List<SetPaletteParameters> _paletteHistory = new();
     private int _currentIndex = -1;
@@ -26,6 +21,26 @@ public class BusService
             _paletteHistory.Insert(0, parameters);
             _currentIndex = 0;
         }
+    }
+
+    /// <summary>
+    /// Установить состояние загрузки
+    /// </summary>
+    public void SetLoading()
+    {
+        lock (_lock)
+        {
+            _currentIndex = -1;
+        }
+    }
+
+    /// <summary>
+    /// Поставить в очередь команду от юзера
+    /// </summary>
+    public void EnqueueCommand(string command)
+    {
+        Requests.Enqueue(command);
+        SetLoading();
     }
 
     /// <summary>
@@ -49,7 +64,7 @@ public class BusService
     public string GetCurrentResponse()
     {
         SetPaletteParameters? parameters = PeekParameters();
-        return parameters?.ToStringInterpretation() ?? DefaultRainbowResponse;
+        return parameters?.ToStringInterpretation() ?? "-";
     }
 
     /// <summary>
@@ -57,6 +72,11 @@ public class BusService
     /// </summary>
     public void SetRandom()
     {
+        if (_currentIndex < 0)
+        {
+            return;
+        }
+
         lock (_lock)
         {
             if (_paletteHistory.Count == 0)

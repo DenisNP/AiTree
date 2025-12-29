@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
-using AiTreeServer.Alice;
 using AiTreeServer.Common;
 using DeepSeek.Core;
 using DeepSeek.Core.Models;
@@ -14,6 +13,8 @@ namespace AiTreeServer.Services;
 public class AiService(DeepSeekClient deepSeek)
 {
     private const string SystemPrompt = """
+                                        НЕ ПИШИ НИКАКОЙ ТЕКСТ В ОТВЕТЕ, ПРОСТО ВЫЗОВИ tool !
+
                                         Ты система управления анимированной новогодней гирляндой для ёлки. 
                                         Гирлянда умеет отображать заданную палитру, которая определяется перечнем 
                                         HEX-кодов цветов от 3 до 7 штук, а также скоростью анимации (1-10) и 
@@ -46,10 +47,8 @@ public class AiService(DeepSeekClient deepSeek)
                                         то нужно использовать маленькие значения масштаба ближе к 1. Если же элементы 
                                         в сцене либо сами по себе относительно крупные, либо очень медленно переходят 
                                         по цветам друг в друга, нужно использовать большие знаения ближе к 10.
-
-                                        НЕ ПИШИ НИКАКОЙ ТЕКСТ В ОТВЕТЕ, ПРОСТО ВЫЗОВИ tool !
                                         """;
-    
+
     private static readonly JsonSerializerOptions Options = JsonSerializerOptions.Default;
     private static readonly JsonSchemaExporterOptions ExporterOptions = new()
     {
@@ -130,7 +129,7 @@ public class AiService(DeepSeekClient deepSeek)
         {
             return null;
         }
-        
+
         arguments = arguments with { Colors = arguments.Colors.Select(c => c.StartsWith("#") ? c : $"#{c}").Take(16).ToArray() };
 
         if (arguments.Speed == 0)

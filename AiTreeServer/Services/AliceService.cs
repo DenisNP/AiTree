@@ -30,14 +30,14 @@ public class AliceService(BusService bus, ILogger<AliceService> logger)
                 .Trim()
                 .ToString();
 
-            bus.Requests.Enqueue(trimmedCommand);
+            bus.EnqueueCommand(trimmedCommand);
             logger.LogInformation("Request added: {TrimmedCommand}", trimmedCommand);
 
             var response = new AliceResponse(request)
             {
                 Response =
                 {
-                    Text = "Зажигаю ёлку " + request.Request.Command,
+                    Text = "Хорошо. Зажигаю ёлку " + request.Request.Command,
                     EndSession = true
                 }
             };

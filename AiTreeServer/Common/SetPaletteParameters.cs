@@ -14,12 +14,12 @@ public record SetPaletteParameters
     private string? _stringInterpretation;
 
     /// <summary>
-    /// Вычисляет одноцифренный хэш от параметров палитры
+    /// Вычисляет двузначный хэш от параметров палитры
     /// </summary>
     private int CalculateHash()
     {
-        int hash = Colors.Length + Speed + Scale + Colors.Sum(color => color.GetHashCode() % 100);
-        return Math.Abs(hash) % 10;
+        int hash = Colors.Length + Speed + Scale + Colors.Sum(color => color.GetHashCode() % 1000);
+        return Math.Abs(hash) % 100;
     }
 
     /// <summary>
