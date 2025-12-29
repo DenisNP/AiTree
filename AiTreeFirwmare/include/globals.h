@@ -25,7 +25,7 @@
 #define WIFI_TIMEOUT        10000  // Таймаут подключения в миллисекундах
 
 // URL для получения данных
-#define DATA_URL            "http://aitree.ispretty.fun:8080/palette"
+#define DATA_URL            "https://aitree.ispretty.fun/palette"
 
 // Интервал опроса сервера (в миллисекундах)
 #define FETCH_INTERVAL      200

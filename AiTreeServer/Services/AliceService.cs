@@ -33,7 +33,7 @@ public class AliceService(BusService bus, ILogger<AliceService> logger)
 
             return response;
         }
-        
+
         if (request.Request.Command is { Length: > 0 })
         {
             string withoutFirstPrefix = request.Request.Command
