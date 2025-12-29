@@ -5,6 +5,7 @@ namespace AiTreeServer.Services;
 public class PaletteService(AiService aiService, BusService bus, ILogger<PaletteService> logger) : BackgroundService
 {
     private readonly Random _random = new();
+    private bool _postponeNextChange = false;
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -29,9 +30,17 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            // Ждём случайное время от 1 до 2 минут
-            int delaySeconds = _random.Next(60, 121);
+            // Ждём случайное время
+            int delaySeconds = _random.Next(120, 181);
             await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
+            lock (_random)
+            {
+                if (_postponeNextChange)
+                {
+                    _postponeNextChange = false;
+                    continue;
+                }
+            }
             
             if (!stoppingToken.IsCancellationRequested && bus.GetHistoryCount() > 0)
             {
@@ -65,7 +74,11 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
                 if (response.Colors.Length >= 2)
                 {
                     bus.AddPalette(response);
-                    
+                    lock (_random)
+                    {
+                        _postponeNextChange = true;
+                    }
+
                     logger.LogInformation("Palette added to history, total: {Count}", bus.GetHistoryCount());
                     logger.LogInformation("Current response: {CurrentResponse}", bus.GetCurrentResponse());
                 }

@@ -7,14 +7,17 @@
 // Тип светодиодной ленты
 #define LED_TYPE            WS2812B
 // Порядок цветов RGB
-#define COLOR_ORDER         RGB
+#define COLOR_ORDER         GRB
 
 // Частота обновления (кадров в секунду)
 #define FRAMES_PER_SECOND   120
 // Количество светодиодов на ленте
-#define NUM_LEDS            100
+#define NUM_LEDS            25
 // Яркость светодиодов (0-255)
 #define BRIGHTNESS          200
+
+// Цикл анимации загрузки в секундах
+#define LOADING_CYCLE_TIME  1.5f
 
 // Настройки WiFi
 #define WIFI_SSID           "471"
@@ -28,7 +31,7 @@
 #define FETCH_INTERVAL      200
 
 // Максимальная длина payload:
-// код(1) + кол-во цветов(2) + цвета(16*3*3=144) + запятые(~50) + speed(2) + scale(2) + запас
+// код(2) + кол-во цветов(2) + цвета(16*3*3=144) + запятые(~50) + speed(2) + scale(2) + запас
 #define MAX_PAYLOAD_LENGTH  256
 
 // Коэффициент затухания для переходов
@@ -39,6 +42,9 @@ extern CRGB nextLeds[NUM_LEDS];
 extern CRGB leds[NUM_LEDS];
 
 extern void setLed(uint8_t index, CRGB color);
+
+// Флаг состояния загрузки
+extern bool isLoadingMode;
 
 // Макрос для определения размера массива
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))

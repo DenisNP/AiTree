@@ -3,6 +3,7 @@
 #include <network.h>
 #include <palette.h>
 #include <animations.h>
+#include <transitions.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
@@ -245,15 +246,32 @@ static String fetchData()
 }
 
 // Парсинг payload и применение настроек (вызывается в основном потоке)
-static void parsePayload(const String& payload)
+static bool parsePayload(const String& payload)
 {
+    // Проверяем, является ли payload символом "-" (режим загрузки)
+    if (payload == "-")
+    {
+        // Дефис - переключаем режим загрузки
+        isLoadingMode = true;
+        transitionInProgress = false;
+        
+        if (Serial)
+        {
+            Serial.println("Режим загрузки активирован");
+        }
+        return false;
+    }
+
     // Парсим первое число (код) - уже проверено в fetchData
     int commaIndex = payload.indexOf(',');
     
     if (commaIndex <= 0)
     {
-        return;
+        return false;
     }
+
+    // Иначе - выключаем режим загрузки и парсим данные как обычно
+    isLoadingMode = false;
     
     // Парсим остальные данные - количество цветов и палитру
     int pos = commaIndex + 1;
@@ -273,6 +291,8 @@ static void parsePayload(const String& payload)
             parseParameters(payload, pos);
         }
     }
+
+    return true;
 }
 
 // Задача FreeRTOS для периодического получения данных
@@ -340,9 +360,8 @@ extern bool checkNetworkData()
     {
         // Получили новые данные - парсим их в основном потоке
         String payload = String(data.payload);
-        parsePayload(payload);
-        return true;
+        return parsePayload(payload);
     }
-    
+
     return false;
 }

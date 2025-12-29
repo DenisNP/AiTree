@@ -7,7 +7,7 @@
 bool transitionInProgress = false;
 
 // Время перехода в секундах
-float transitionTime = 2.0;
+float transitionTime = 1.5;
 
 // Направление перехода
 // 1 = от начала к концу, -1 = от конца к началу
@@ -46,7 +46,7 @@ extern void chunkedTransition()
         // Переход не запущен - ничего не делаем
         return;
     }
-    
+
     transitionFrameCounter++;
     
     // Вычисляем прогресс перехода
