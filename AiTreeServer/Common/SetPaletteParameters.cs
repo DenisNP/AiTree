@@ -1,9 +1,18 @@
-﻿namespace AiTreeServer.Common;
+﻿using System.ComponentModel;
 
-public record SetPaletteParameters(string[] Colors, int Speed, int Scale)
+namespace AiTreeServer.Common;
+
+public record SetPaletteParameters
 {
+    [Description("Список HEX-кодов цветов палитры, не менее 3 и не более 7 кодов")]
+    public string[] Colors { get; init; } = [];
+    [Description("Скорость анимации, от 1 (медленно) до 10 (быстро)")]
+    public int Speed { get; init; }
+    [Description("Масштабирование палитры на гирлянду от 1 (мелко) до 10 (крупно)")]
+    public int Scale { get; init; }
+
     private string? _stringInterpretation;
-    
+
     /// <summary>
     /// Вычисляет одноцифренный хэш от параметров палитры
     /// </summary>

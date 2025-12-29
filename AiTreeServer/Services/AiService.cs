@@ -1,12 +1,17 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
+using AiTreeServer.Alice;
 using AiTreeServer.Common;
-using AiTreeServer.GigaChatSDK;
-using AiTreeServer.GigaChatSDK.Interfaces;
-using AiTreeServer.GigaChatSDK.Models;
+using DeepSeek.Core;
+using DeepSeek.Core.Models;
 
 namespace AiTreeServer.Services;
 
-public class AiService
+public class AiService(DeepSeekClient deepSeek)
 {
     private const string SystemPrompt = """
                                         Ты система управления анимированной новогодней гирляндой для ёлки. 
@@ -16,181 +21,134 @@ public class AiService
                                         Тебе нужно подобрать такую палитру, скорость и масштаб, которые лучше всего 
                                         подходят под названное пользователем. Помни, что это цвет зажигания 
                                         светодиода,то есть, например, чёрный просто выключает светодиод, не 
-                                        злоупотребляй таким. В идеале чтобы не больше трети гирлянды было выключено 
-                                        в каждый момент времени. В гирлянде уже написан анимационный движок, 
+                                        злоупотребляй таким. В гирлянде уже написан анимационный движок, 
                                         который будет перемещать цвета палитры по ней, тебе нужно только задать сами 
                                         цвета, скорость и масштаб. Разрешается иногда дублировать цвета в палитре при 
                                         необходимости, чтобы уменьшить долю присутствия других цветов.
-                                        
+
                                         Подумай о том, как описанную сцену будет видеть человек. Важно не только то, 
                                         как много в сцене конкретного цвета, но и то, какие цвета будут больше всего 
                                         бросаться в глаза, и с какими цветами люди ассоциируют описанную сцену и 
                                         предметы в ней. Найди ряд ключевых цветов и строй палитру вокруг них. Но 
                                         иногда могут потребоваться вставки совершенно иного рода, если в сцене есть 
-                                        яркие выделяющиеся элементы. Не нужно давать цвета предметам, которые в сцене 
-                                        есть, но малозаметны или присутствуют в небольшом объёме, которые заслонены 
-                                        другими предметами и так далее. Особенно если палитра небольшая по числу 
-                                        цветов, тщательно продумай, какие цвета ты туда включишь. Иногда лучше 
-                                        увеличить или продублировать цвета, чтобы не дать второстепенному цвету такой 
-                                        же вес в конечной палитре, как ключевому.
-                                        
+                                        яркие выделяющиеся элементы. Иногда лучше увеличить или продублировать цвета, 
+                                        чтобы не дать второстепенному цвету такой же вес в конечной палитре, как 
+                                        ключевому.
+
                                         Используй только HEX-коды длиной 6, то есть не #FFF, а #FFFFFF.
-                                        
+
                                         Скорость анимации: если движение, которое описано в сцене, быстрое и стремительное,
-                                        то нужно использовать более высокие значения ближе к 10. Или если какой-то объект появляется 
-                                        кратковременно, например, молния. Если же движение плавное и размеренное, нужно 
-                                        использовать небольшие значения ближе к 1.
-                                        
+                                        то нужно использовать более высокие значения ближе к 10. Если же движение плавное 
+                                        и размеренное, нужно использовать небольшие значения ближе к 1.
+
                                         Масштаб: если относительно размера сцены есть небольшие объекты, которые выделяются 
                                         цветом, либо есть частые переходы цветов от одних небольших объектов к другим, 
                                         то нужно использовать маленькие значения масштаба ближе к 1. Если же элементы 
                                         в сцене либо сами по себе относительно крупные, либо очень медленно переходят 
                                         по цветам друг в друга, нужно использовать большие знаения ближе к 10.
+
+                                        НЕ ПИШИ НИКАКОЙ ТЕКСТ В ОТВЕТЕ, ПРОСТО ВЫЗОВИ tool !
                                         """;
     
-    private readonly FunctionDescription _setPaletteDefinition = new()
+    private static readonly JsonSerializerOptions Options = JsonSerializerOptions.Default;
+    private static readonly JsonSchemaExporterOptions ExporterOptions = new()
     {
-        Name = "set_palette",
-        Description = "Устанавливает палитру для анимированной гирлянды",
-        Parameters = new FunctionParameters
+        TreatNullObliviousAsNonNullable = true,
+        TransformSchemaNode = (context, schema) =>
         {
-            Type = "object",
-            Properties = new Dictionary<string, ParameterProperty>
+            // Determine if a type or property and extract the relevant attribute provider.
+            ICustomAttributeProvider? attributeProvider = context.PropertyInfo is not null
+                ? context.PropertyInfo.AttributeProvider
+                : context.TypeInfo.Type;
+
+            // Look up any description attributes.
+            DescriptionAttribute? descriptionAttr = attributeProvider?
+                .GetCustomAttributes(inherit: true)
+                .Select(attr => attr as DescriptionAttribute)
+                .FirstOrDefault(attr => attr is not null);
+
+            // Apply description attribute to the generated schema.
+            if (descriptionAttr != null)
             {
+                if (schema is not JsonObject jObj)
                 {
-                    "colors", new ParameterProperty
+                    // Handle the case where the schema is a Boolean.
+                    JsonValueKind valueKind = schema.GetValueKind();
+                    Debug.Assert(valueKind is JsonValueKind.True or JsonValueKind.False);
+                    schema = jObj = new JsonObject();
+                    if (valueKind is JsonValueKind.False)
                     {
-                        Type = "array",
-                        Items = new ParameterPropertyItems
-                        {
-                            Type = "string"
-                        },
-                        Description = "Список HEX-кодов цветов палитры, не менее 3 и не более 7 кодов"
-                    }
-                },
-                {
-                    "animation_speed", new ParameterProperty
-                    {
-                        Type = "integer",
-                        Description = "Скорость анимации, от 1 (медленно) до 10 (быстро)"
-                    }
-                },
-                {
-                    "palette_scale", new ParameterProperty
-                    {
-                        Type = "integer",
-                        Description = "Масштабирование палитры на гирлянду от 1 (мелко) до 10 (крупно)"
+                        jObj.Add("not", true);
                     }
                 }
-            },
-            Required = ["colors"]
-        },
-        FewShotExamples = [
-            new FewShotExample
-            {
-                Request = "океан во время шторма",
-                Params = new Dictionary<string, object>
-                {
-                    {"colors", new[]{ "#243961", "#eaeef1", "#4e76c1", "#3661b0" }},
-                    {"animation_speed", 7},
-                    {"palette_scale", 5}
-                }
-            },
-            new FewShotExample
-            {
-                Request = "цветущий сад сакуры летним днём",
-                Params = new Dictionary<string, object>
-                {
-                    {"colors", new[]{ "#FFC0CB", "#FFE4E1", "#FFFFFF", "#90EE90", "#FFD700" }},
-                    {"animation_speed", 3},
-                    {"palette_scale", 7}        
-                }
-            },
-            new FewShotExample
-            {
-                Request = "коробка с конфетти",
-                Params = new Dictionary<string, object>
-                {
-                    {"colors", new[]{ "#FFD700","#FF69B4","#00FFFF","#FF00FF","#FF4500" }},
-                    {"animation_speed", 10},
-                    {"palette_scale", 1}        
-                }
-            },
-            new FewShotExample
-            {
-                Request = "хвойный лес солнечным зимним днём",
-                Params = new Dictionary<string, object>
-                {
-                    {"colors", new[]{ "#FFFFFF", "#006400", "#FFFFFF", "#FFD700", "#c8edf9" }},
-                    {"animation_speed", 1},
-                    {"palette_scale", 6}        
-                }
+
+                jObj.Insert(0, "description", descriptionAttr.Description);
             }
-        ],
-        ReturnParameters = new ReturnParameters()
+
+            return schema;
+        }
     };
 
-    private readonly GigaChat _gigaChat;
-
-    public AiService()
+    private readonly Tool _setPaletteDefinition = new()
     {
-        IHttpService httpService = new HttpService(ignoreTls: true);
-        ITokenService tokenService = new TokenService(httpService, isCommercial: false);
-        _gigaChat = new GigaChat(tokenService, httpService);
-    }
+        Function = new RequestFunction
+        {
+            Name = "set_palette",
+            Description = "Устанавливает палитру для анимированной гирлянды",
+            Parameters = Options.GetJsonSchemaAsNode(typeof(SetPaletteParameters), ExporterOptions)
+        }
+    };
 
     public async Task<SetPaletteParameters?> AskChatForPalette(string userText)
     {
-        var query = new MessageQuery(
-            [
-                //new MessageContent("system", SystemPrompt),
-                //new MessageContent("user", userText)
-                new MessageContent("user", SystemPrompt + "\n\nИтак, сцена: " +  userText), // так лучше работает
+        var query = new ChatRequest
+        {
+            Messages = [
+                Message.NewSystemMessage(SystemPrompt),
+                Message.NewUserMessage(userText)
             ],
-            [_setPaletteDefinition],
-            model: "GigaChat-2-Pro",
-            temperature: 1.5f,
-            functionCall: new Dictionary<string, string> { { "name", _setPaletteDefinition.Name! } }
-        );
+            Model = DeepSeekModels.ChatModel,
+            Tools = [_setPaletteDefinition]
+        };
 
-        Response? response = await _gigaChat.CompletionsAsync(query);
+        ChatResponse? response = await deepSeek.ChatAsync(query, CancellationToken.None);
         if (response?.Choices == null || response.Choices.Count < 1)
         {
             return null;
         }
 
         Choice choice = response.Choices[0];
-        if (choice.Message?.FunctionCall?.Name != _setPaletteDefinition.Name)
+        if (choice.Message?.ToolCalls?.FirstOrDefault()?.Function.Name != _setPaletteDefinition.Function.Name)
         {
             return null;
         }
 
-        FunctionCall functionCall = choice.Message!.FunctionCall!;
-        if (!functionCall.Arguments.TryGetValue("colors", out object? colorsArgument) || colorsArgument is not JsonElement colorsEl)
+        ToolCalls.ToolCallsFunction functionCall = choice.Message.ToolCalls.First().Function;
+        var arguments = JsonSerializer.Deserialize<SetPaletteParameters>(functionCall.Arguments, Options);
+
+        if (arguments?.Colors is not { Length: > 0 })
         {
             return null;
         }
 
-        string[] colors = colorsEl.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToArray();
-
-        if (colors is not { Length: > 0 })
+        if (arguments.Speed == 0)
         {
-            return null;
+            arguments = arguments with { Speed = 5 }; // default
         }
-        
-        var speed = 5;
-        var scale = 5;
-
-        if (functionCall.Arguments.TryGetValue("animation_speed", out object? speedArgument))
+        else
         {
-            int.TryParse(speedArgument?.ToString(), out speed);
+            arguments = arguments with { Speed = Math.Clamp(arguments.Speed, 1, 10) };
         }
 
-        if (functionCall.Arguments.TryGetValue("palette_scale", out object? scaleArgument))
+        if (arguments.Scale == 0)
         {
-            int.TryParse(scaleArgument?.ToString(), out scale);
+            arguments = arguments with { Scale = 5 }; // default
+        }
+        else
+        {
+            arguments = arguments with { Scale = Math.Clamp(arguments.Scale, 1, 10) };
         }
 
-        return new SetPaletteParameters(colors.Take(16).ToArray(), speed, scale);
+        return arguments;
     }
 }
