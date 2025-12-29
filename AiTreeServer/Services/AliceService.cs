@@ -20,14 +20,29 @@ public class AliceService(BusService bus, ILogger<AliceService> logger)
 
             return response;
         }
+
+        if (request.IsEnter())
+        {
+            var response = new AliceResponse(request)
+            {
+                Response =
+                {
+                    Text = "Опишите сцену"
+                }
+            };
+
+            return response;
+        }
         
         if (request.Request.Command is { Length: > 0 })
         {
-            string trimmedCommand = request.Request.Command
+            string withoutFirstPrefix = request.Request.Command
                 .TrimStart("светиться")
                 .TrimStart("гореть")
-                .TrimStart("зажечься")
                 .Trim()
+                .ToString();
+
+            string trimmedCommand = withoutFirstPrefix
                 .TrimStart("как")
                 .TrimStart("словно")
                 .TrimStart("будто")
@@ -41,7 +56,7 @@ public class AliceService(BusService bus, ILogger<AliceService> logger)
             {
                 Response =
                 {
-                    Text = "Хорошо. Зажигаю ёлку " + request.Request.Command,
+                    Text = "Хорошо. Зажигаю ёлку как " + trimmedCommand,
                     EndSession = true
                 }
             };
