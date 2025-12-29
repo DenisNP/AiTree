@@ -15,10 +15,10 @@ public class AliceController(AliceService aliceService) : ControllerBase
     };
 
     [HttpPost]
-    public Task Post()
+    public async Task Post()
     {
         using var reader = new StreamReader(Request.Body);
-        string body = reader.ReadToEnd();
+        string body = await reader.ReadToEndAsync();
 
         var request = JsonSerializer.Deserialize<AliceRequest>(body, _jsonOpts);
 
@@ -26,7 +26,8 @@ public class AliceController(AliceService aliceService) : ControllerBase
         {
             Console.WriteLine("Request is null:");
             Console.WriteLine(body);
-            return Response.WriteAsync("Request is null");
+            await Response.WriteAsync("Request is null");
+            return;
         }
         
         AliceResponse response = request.IsPing()
@@ -34,6 +35,6 @@ public class AliceController(AliceService aliceService) : ControllerBase
             : aliceService.HandleRequest(request);
 
         string stringResponse = JsonSerializer.Serialize(response, _jsonOpts);
-        return Response.WriteAsync(stringResponse);
+        await Response.WriteAsync(stringResponse);
     }
 }
