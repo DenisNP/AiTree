@@ -20,12 +20,12 @@
 #define LOADING_CYCLE_TIME  1.5f
 
 // Настройки WiFi
-#define WIFI_SSID           "471"
-#define WIFI_PASSWORD       "89052791441"
+#define WIFI_SSID           "YOUR_SSID"
+#define WIFI_PASSWORD       "YOUR_PASSWORD"
 #define WIFI_TIMEOUT        10000  // Таймаут подключения в миллисекундах
 
 // URL для получения данных
-#define DATA_URL            "https://aitree.ispretty.fun/palette"
+#define DATA_URL            "https://your.domain/palette"
 
 // Интервал опроса сервера (в миллисекундах)
 #define FETCH_INTERVAL      200
