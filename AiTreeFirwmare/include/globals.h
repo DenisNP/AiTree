@@ -14,7 +14,7 @@
 // Количество светодиодов на ленте
 #define NUM_LEDS            25
 // Яркость светодиодов (0-255)
-#define BRIGHTNESS          200
+#define BRIGHTNESS          128
 
 // Цикл анимации загрузки в секундах
 #define LOADING_CYCLE_TIME  1.5f

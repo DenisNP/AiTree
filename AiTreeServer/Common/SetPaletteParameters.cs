@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Drawing;
 
 namespace AiTreeServer.Common;
 
@@ -27,30 +28,17 @@ public record SetPaletteParameters
     /// </summary>
     private static int[]? HexToChannels(string hex)
     {
-        // Удаляем символ # если есть
-        hex = hex.TrimStart('#');
-    
-        // Проверяем корректность длины
-        if (hex.Length != 6)
-        {
-            return null;
-        }
-
         try
         {
-            // Преобразуем каждые два символа в число
-            var r = Convert.ToInt32(hex[..2], 16);
-            var g = Convert.ToInt32(hex[2..4], 16);
-            var b = Convert.ToInt32(hex[4..6], 16);
-
-            return [r, g, b];
+            Color color = Utils.HexToColor(hex);
+            return [color.R, color.G, color.B];
         }
         catch
         {
             return null;
         }
     }
-    
+
     /// <summary>
     /// Генерирует строку в формате: hash,numColors,r1,g1,b1,...,speed,scale
     /// Кэширует результат после первого вычисления

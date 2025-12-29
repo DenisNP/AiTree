@@ -9,5 +9,8 @@ bool isLoadingMode = true;
 
 extern void setLed(uint8_t index, CRGB color)
 {
-    leds[index] = CRGB(color.r * 0.5f, color.g * 0.5f, color.b * 0.5f);
+    /*CRGB next = CRGB(color.r, color.g, color.b);
+    CRGB existing = leds[index];
+    leds[index] = blend(existing, next, 50);*/
+    leds[index] = CRGB(color.r, color.g, color.b);
 }

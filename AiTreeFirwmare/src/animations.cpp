@@ -23,20 +23,16 @@ static uint32_t loadingFrameCounter = 0;
 
 extern void setParameters(uint8_t _speed, uint8_t scale)
 {
-    // Устанавливаем скорость (rotationTime)
-    // speed от 1 (медленно) до 10 (быстро)
-    // 1 -> 20 секунд, 10 -> 2 секунды
+    // Устанавливаем скорость
     if (_speed >= 1 && _speed <= 10)
     {
         speed = _speed * 1.0f;
     }
 
-    // Устанавливаем масштаб палитры (paletteScale)
-    // scale от 1 до 10
-    // 1 -> 0.25, 10 -> 3.0
+    // Устанавливаем масштаб палитры
     if (scale >= 1 && scale <= 10)
     {
-        paletteScale = 0.25 + (scale - 1) * 0.3;
+        paletteScale = 5.0 - (scale - 1) * 0.5;
     }
 }
 
@@ -99,7 +95,7 @@ extern void noise()
     float currentTime = (float)frameCounter / FRAMES_PER_SECOND;
 
     // Y координата движется со временем
-    yOffset = currentTime * speed * 0.5f;
+    yOffset = currentTime * speed * 0.3f;
 
     for (uint8_t i = 0; i < NUM_LEDS; i++)
     {
@@ -120,4 +116,3 @@ extern void noise()
         nextLeds[i] = color;
     }
 }
-

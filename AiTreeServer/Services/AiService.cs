@@ -130,7 +130,10 @@ public class AiService(DeepSeekClient deepSeek)
             return null;
         }
 
-        arguments = arguments with { Colors = arguments.Colors.Select(c => c.StartsWith("#") ? c : $"#{c}").Take(16).ToArray() };
+        arguments = arguments with { 
+            Colors = Utils
+                .SortColorsByProximity(arguments.Colors.Select(c => c.StartsWith('#') ? c : $"#{c}").Take(16))
+        };
 
         if (arguments.Speed == 0)
         {

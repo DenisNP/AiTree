@@ -1,5 +1,6 @@
 #include <palette.h>
 #include <FastLED.h>
+#include <globals.h>
 
 // Инициализируем палитру радугой
 CRGBPalette16 currentPalette = RainbowColors_p;
@@ -12,11 +13,18 @@ extern void setPalette(const CRGB* colors, uint8_t numColors)
 {
     if (numColors < 1) numColors = 1;
     if (numColors > 16) numColors = 16;
-    
+
+    int repetitions = 16 / numColors;
+
     // Заполняем палитру повторением цветов без градиентов
-    for (uint8_t i = 0; i < 16; i++)
+    for (uint8_t i = 0; i < numColors; i++)
     {
-        // Циклически выбираем цвет из массива
-        currentPalette[i] = colors[i % numColors];
+        for (uint8_t r = 0; r < repetitions; r++)
+        {
+            if (i + r < 16) 
+            {
+                currentPalette[i + r] = colors[i];
+            }
+        }
     }
 }
