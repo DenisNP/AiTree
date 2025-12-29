@@ -187,7 +187,7 @@ public static class Utils
         {
             if (input.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return input.Substring(prefix.Length);
+                return input.Substring(prefix.Length).Trim();
             }
         }
 
