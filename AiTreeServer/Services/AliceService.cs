@@ -24,6 +24,10 @@ public class AliceService(BusService bus, ILogger<AliceService> logger)
         if (request.Request.Command is { Length: > 0 })
         {
             string trimmedCommand = request.Request.Command
+                .TrimStart("светиться")
+                .TrimStart("гореть")
+                .TrimStart("зажечься")
+                .Trim()
                 .TrimStart("как")
                 .TrimStart("словно")
                 .TrimStart("будто")

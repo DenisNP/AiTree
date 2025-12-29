@@ -95,12 +95,12 @@ extern void noise()
     float currentTime = (float)frameCounter / FRAMES_PER_SECOND;
 
     // Y координата движется со временем
-    yOffset = currentTime * speed * 2.0f / paletteScale;
+    yOffset = currentTime * speed * 3.0f / paletteScale + 100.0f;
 
     for (uint8_t i = 0; i < NUM_LEDS; i++)
     {
         // X координата = позиция диода
-        float xCoord = (float)i * paletteScale;
+        float xCoord = (float)i * paletteScale + 100.0f;
 
         // Получаем значение шума Перлина (от -1 до 1)
         // Y координата = смещение для анимации
