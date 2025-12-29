@@ -17,7 +17,7 @@ public:
     // persistence - затухание амплитуды (обычно 0.5)
     // lacunarity - увеличение частоты (обычно 2.0)
     // contrast - коэффициент контрастности (обычно 2.0), результат обрезается в [-1, 1]
-    float fractal2D(float x, float y, float scale = 0.05, int octaves = 4, float persistence = 0.3, float lacunarity = 2.0, float contrast = 2);
+    float fractal2D(float x, float y, float scale = 0.05, int octaves = 4, float persistence = 0.3, float lacunarity = 2.0, float contrast = 2.5f);
 
 private:
     uint32_t _seed; // Store the user-provided seed

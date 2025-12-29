@@ -18,7 +18,7 @@ public class PaletteController(BusService bus)
     [HttpGet("test")]
     public void Test([FromQuery] string q)
     {
-        bus.Requests.Enqueue(q);
+        bus.EnqueueCommand(q);
     }
 
     [HttpGet("delete")]

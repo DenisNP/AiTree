@@ -32,7 +32,7 @@ extern void setParameters(uint8_t _speed, uint8_t scale)
     // Устанавливаем масштаб палитры
     if (scale >= 1 && scale <= 10)
     {
-        paletteScale = 5.0 - (scale - 1) * 0.5;
+        paletteScale = 5.0 - (scale - 1) * 4.0 / 9.0;
     }
 }
 
@@ -95,7 +95,7 @@ extern void noise()
     float currentTime = (float)frameCounter / FRAMES_PER_SECOND;
 
     // Y координата движется со временем
-    yOffset = currentTime * speed * 0.3f;
+    yOffset = currentTime * speed * 2.0f / paletteScale;
 
     for (uint8_t i = 0; i < NUM_LEDS; i++)
     {
@@ -110,7 +110,7 @@ extern void noise()
         uint16_t paletteIndex = (uint16_t)((noiseValue + 1.0) * 32767.5);
 
         // Получаем цвет из текущей палитры
-        CRGB color = ColorFromPaletteExtended(getCurrentPalette(), paletteIndex, 255, TBlendType::LINEARBLEND);
+        CRGB color = ColorFromPaletteExtended(getCurrentPalette(), paletteIndex, BRIGHTNESS, TBlendType::LINEARBLEND);
 
         // Пишем в nextLeds
         nextLeds[i] = color;

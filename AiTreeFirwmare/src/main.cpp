@@ -4,6 +4,9 @@
 #include <transitions.h>
 #include <palette.h>
 #include <network.h>
+#include <../lib/PerlinsNoise/PerlinsNoise.h>
+
+PerlinsNoise PNoise1(654123);
 
 // Отрисовка кадра с учетом текущего состояния перехода
 void animate()
@@ -34,7 +37,7 @@ void setup()
     Serial.begin(115200);
 
     delay(1000);
-    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+    FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(Typical8mmPixel);
     FastLED.setBrightness(BRIGHTNESS);
     // FastLED.setMaxPowerInVoltsAndMilliamps(5, 5000);
 
@@ -44,6 +47,21 @@ void setup()
     // Настройка генератора случайных чисел
     random16_set_seed(5867);
     random16_add_entropy(analogRead(3));
+
+    /*delay(5000);
+    for(uint8_t i = 0; i < 25; i++) {
+        for(uint8_t k = 0; k < 25; k++) {
+            float noise = PNoise1.fractal2D((float)i, float(k));
+            Serial.print(noise);
+            if (k < 24) {
+                Serial.print(",");
+            } else {
+                Serial.println();
+            }
+        }
+    }
+
+    delay(10000);*/
 
     // запускаем сеть
     startNetwork();
