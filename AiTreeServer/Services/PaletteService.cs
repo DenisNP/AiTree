@@ -73,6 +73,12 @@ public class PaletteService(AiService aiService, BusService bus, ILogger<Palette
                 // если получили достаточное число цветов, добавляем в историю
                 if (response.Colors.Length >= 2)
                 {
+                    // все цветные цвета понижаем в яркости для лучшего отображения на светодиодах
+                    response = response with
+                    {
+                        Colors = response.Colors.Select(Utils.AdjustColorIfHighSaturation).ToArray()
+                    };
+
                     bus.AddPalette(response);
                     lock (_random)
                     {

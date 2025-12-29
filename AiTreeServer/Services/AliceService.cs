@@ -36,18 +36,8 @@ public class AliceService(BusService bus, ILogger<AliceService> logger)
 
         if (request.Request.Command is { Length: > 0 })
         {
-            string withoutFirstPrefix = request.Request.Command
-                .TrimStart("светиться")
-                .TrimStart("гореть")
-                .Trim()
-                .ToString();
-
-            string trimmedCommand = withoutFirstPrefix
-                .TrimStart("как")
-                .TrimStart("словно")
-                .TrimStart("будто")
-                .Trim()
-                .ToString();
+            string withoutFirstPrefix = request.Request.Command.RemovePrefixIfExists("светиться", "гореть");
+            string trimmedCommand = withoutFirstPrefix.RemovePrefixIfExists("как", "словно", "будто");
 
             bus.EnqueueCommand(trimmedCommand);
             logger.LogInformation("Request added: {TrimmedCommand}", trimmedCommand);
